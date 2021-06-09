@@ -41,6 +41,7 @@ typedef struct{
 }tSession;
 
 
+
 /**
  * Calculates the next player.
  *

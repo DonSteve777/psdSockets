@@ -61,7 +61,7 @@ void showReceivedCode (unsigned int code){
 					break;
 			}
 
-			printf ("Received:%s\n", string);
+			printf ("Received: ----%s\n", string);
 		}
 }
 
@@ -238,63 +238,63 @@ int main(int argc, char *argv[]){
 --------------------------------------------------------------*/
 			unsigned int stack;
 			code = TURN_BET;
-			while(code == TURN_BET && code != TURN_BET_OK){
-				printf("%s\n", "waiting code" );
+			while(code == TURN_BET ){
+				if (DEBUG_CLIENT) printf("%s\n", "waiting code" );
 				/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);	//TURN_BET
-				/*messageLength = */recv(socketfd, &stack, sizeof(unsigned int), 0);	//STACK
-				showReceivedCodecode(code);
-				printf("%s %u\n", "stack: ", stack );
+				showReceivedCode(code);
 				if (code == TURN_BET){
+					/*messageLength = */recv(socketfd, &stack, sizeof(unsigned int), 0);	//STACK
+					printf("%s %u\n", "stack: ", stack );
 					unsigned int bet = readBet();
 					send(socketfd, &bet, sizeof(unsigned int), 0);
-					printf("%s\n", " bet sent" );
 				}
 			}
 			/*------------------------------------------------------------------------------------
 			Esperar turno
 			-----------------------------------------------------------------------------------------*/
-			printf("%s\n", "waiting turn" );
+			if (DEBUG_CLIENT)	printf("%s\n", "waiting turn play xxxxxxxxxxxxxxxx" );
 			/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
-			showReceivedCodecode(code);
+			showReceivedCode(code);
 			unsigned int points;
 			tDeck deck;
 /*------------------------------------------------------------------------------------
 PLAY
 -----------------------------------------------------------------------------------------*/
-			if (code == TURN_PLAY){
-				printf("%s\n", "waiting points and deck" );
-				/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-				/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-				printf("%s %u\n","Points :", points );
-				printDeck(&deck);
-			}
+		// 	if (code == TURN_PLAY){
+		// 		printf("%s\n", "waiting points and deck" );
+		// 		/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
+		// 		/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
+		// 		printf("%s %u\n","Points :", points );
+		// 		printDeck(&deck);
+		// 		while (code == TURN_PLAY){
+		// 			unsigned int option = readOption();
+		// 			/*messageLength = */send(socketfd, &option, sizeof(unsigned int), 0);
+		// 			if (option == TURN_PLAY_HIT){
+		// 				/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
+		// 				/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
+		// 				/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
+		// 				showReceivedCode(code);
+		// 			}
+		// 		}
+		// }
 //STAND / HIT
-			while (code == TURN_PLAY){
-				unsigned int option = readOption();
-				/*messageLength = */send(socketfd, &option, sizeof(unsigned int), 0);
-				if (option == TURN_PLAY_HIT){
-					/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
-					/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-					/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-					showReceivedCodecode(code);
-				}
-			}
+
 /*------------------------------------------------------------------------------------
 WAIT
 -----------------------------------------------------------------------------------------*/
-			else if (code == TURN_PLAY_WAIT){
-				showReceivedCodecode(code);
-				/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-				/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-				printf("%s %u\n","Opponent \n Points :", points );
-				printDeck(&deck);
-			}
-			while (code == TURN_PLAY_WAIT){
-				/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-				/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-				printf("%s %u\n","Opponent \n Points :", points );
-				printDeck(&deck);
-				}
+			// else if (code == TURN_PLAY_WAIT){
+			// 	/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
+			// 	/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
+			// 	printf("%s %u\n","Opponent \n Points :", points );
+			// 	printDeck(&deck);
+			// }
+			// while (code == TURN_PLAY_WAIT){
+			// 	/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
+			// 	/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
+			// 	/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
+			// 	printf("%s %u\n","Opponent \n Points :", points );
+			// 	printDeck(&deck);
+			// }
 
 			/*------------------------------------------------------------------------------------
 			TURN_PLAY_WAIT , jugada actual, deck

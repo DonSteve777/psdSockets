@@ -1,7 +1,7 @@
 #include "utils.h"
 
 /** Debug mode? */
-#define DEBUG_CLIENT 0
+#define DEBUG_CLIENT 1
 
 /** Action taken by the player to stand */
 #define PLAYER_STAND 0
@@ -37,5 +37,3 @@ unsigned int readBet ();
  * @return A number that represents the action taken by the player.
  */
 unsigned int readOption ();
-
-
