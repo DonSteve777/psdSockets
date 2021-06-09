@@ -156,7 +156,7 @@ player 1 y player 2 se registran
 		if (socketPlayer1 < 0)	showError("ERROR while opening socket player 1");
 			// Init and read message
 			memset(session.player1Name, 0, STRING_LENGTH);
-		/*messageLength = */recv(socketPlayer1, session.player1Name, STRING_LENGTH-1, 0);
+		/*messageLength = */recv(socketPlayer1, &session.player1Name, STRING_LENGTH-1, 0);
 		printf("player 1: %s\n", session.player1Name);
 
 		/*--------------------------------------------------------------
@@ -167,7 +167,7 @@ player 1 y player 2 se registran
 		if (socketPlayer2 < 0)	showError("ERROR while opening socket player 2");
 			// Init and read message
 			memset(session.player2Name, 0, STRING_LENGTH);
-		/*messageLength = */recv(socketPlayer2, session.player2Name, STRING_LENGTH-1, 0);
+		/*messageLength = */recv(socketPlayer2, &session.player2Name, STRING_LENGTH-1, 0);
 		printf("player 2: %s\n", session.player2Name);
 
 		initSession(&session);
@@ -189,9 +189,6 @@ player 1: BET
 					code = TURN_BET_OK;
 					/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
 					showSentCode(code);
-					/*messageLength = */send(socketPlayer1, &session.player1Stack, sizeof(unsigned int), 0);
-					if (SERVER_DEBUG) printf("%s\n", " stack p1 sent" );
-
 			}
 
 /*--------------------------------------------------------------
@@ -200,7 +197,6 @@ player 2: BET
 				code = TURN_BET;
 				/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
 				showSentCode(code);
-
 				/*messageLength = */send(socketPlayer2, &session.player2Stack, sizeof(unsigned int), 0);
 				if (SERVER_DEBUG) printf("%s\n", " stack p2 sent" );
 
@@ -216,22 +212,22 @@ player 2: BET
 						/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
 						showSentCode(code);
 
-						/*messageLength = */send(socketPlayer2, &session.player2Stack, sizeof(unsigned int), 0);
-						if (SERVER_DEBUG) printf("%s\n", " stack p2 sent" );
 
 				}
 				code = TURN_PLAY;
 				/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
 				if (SERVER_DEBUG) printf(" %s", "  p1 : " );
 				showSentCode(code);
-
-
 				code = TURN_PLAY_WAIT;
 				/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
 				if (SERVER_DEBUG) printf("%s","  p2 " );
 				showSentCode(code);
 
-				while(1);
+				// Close sockets
+				close (socketfd);
+				close (socketPlayer1);
+				close (socketPlayer2);
+			//	while(1);
 
 
 

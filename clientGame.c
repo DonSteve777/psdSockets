@@ -252,11 +252,11 @@ int main(int argc, char *argv[]){
 			/*------------------------------------------------------------------------------------
 			Esperar turno
 			-----------------------------------------------------------------------------------------*/
-			if (DEBUG_CLIENT)	printf("%s\n", "waiting turn play xxxxxxxxxxxxxxxx" );
+			// if (DEBUG_CLIENT)	printf("%s\n", "waiting turn play xxxxxxxxxxxxxxxx" );
 			/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
 			showReceivedCode(code);
-			unsigned int points;
-			tDeck deck;
+			// unsigned int points;
+			// tDeck deck;
 /*------------------------------------------------------------------------------------
 PLAY
 -----------------------------------------------------------------------------------------*/
