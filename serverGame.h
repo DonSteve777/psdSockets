@@ -1,7 +1,7 @@
 #include "game.h"
 
 /** Debug server? */
-#define SERVER_DEBUG 1
+#define SERVER_DEBUG 0
 
 /** Sockets of a game used by a thread in the server */
 typedef struct threadArgs{

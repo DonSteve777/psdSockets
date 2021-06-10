@@ -95,6 +95,10 @@ void *threadProcessing(void *threadArgs){
 	unsigned int card;				/** Current card */
 	unsigned int code, codeRival;	/** Codes for the active player and the rival */
 
+	unsigned int player1Points;
+	unsigned int player2Points;
+	unsigned int option;
+
 		// Get sockets for players
 		socketPlayer1 = ((tThreadArgs *) threadArgs)->socketPlayer1;
 		socketPlayer2 = ((tThreadArgs *) threadArgs)->socketPlayer2;
@@ -115,178 +119,327 @@ void *threadProcessing(void *threadArgs){
 		// Init...
 		endOfGame = FALSE;
 		initSession(&session);
+		currentPlayer = player1;
 
 		while (!endOfGame){
-			/*--------------------------------------------------------------
-player 1: BET
---------------------------------------------------------------*/
-			unsigned int code = TURN_BET;
-			/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
-			/*messageLength = */send(socketPlayer1, &session.player1Stack, sizeof(unsigned int), 0);
-//player 1:recibir bet
-			while(code == TURN_BET){
-				/*messageLength = */recv(socketPlayer1, &session.player1Bet,sizeof(unsigned int), 0);
-				if (session.player1Bet < 0 || session.player1Bet > session.player1Stack)
-					code = TURN_BET;
-				else
-					code = TURN_BET_OK;
-					/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
-					showSentCode(code);
-			}
-			session.player1Stack -=  session.player1Bet;
-
-/*--------------------------------------------------------------
-player 2: BET
---------------------------------------------------------------*/
-				code = TURN_BET;
-				/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
-				showSentCode(code);
-				/*messageLength = */send(socketPlayer2, &session.player2Stack, sizeof(unsigned int), 0);
-	//player 2:recibir bet
+			printSession (&session);
+			if (currentPlayer == player1){
+				/*--------------------------------------------------------------
+	player 1: BET
+	--------------------------------------------------------------*/
+				unsigned int code = TURN_BET;
+				/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+				/*messageLength = */send(socketPlayer1, &session.player1Stack, sizeof(unsigned int), 0);
+	//player 1:recibir bet
 				while(code == TURN_BET){
-					/*messageLength = */recv(socketPlayer2, &session.player2Bet,sizeof(unsigned int), 0);
-					if (session.player2Bet < 0 || session.player2Bet > session.player2Stack)
+					/*messageLength = */recv(socketPlayer1, &session.player1Bet,sizeof(unsigned int), 0);
+					if (session.player1Bet < 0 || session.player1Bet > session.player1Stack)
 						code = TURN_BET;
 					else
 						code = TURN_BET_OK;
-						/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
 						showSentCode(code);
 				}
-				session.player2Stack -=  session.player2Bet;
+				session.player1Stack -=  session.player1Bet;
 
-/*------------------------------------------------------------------------------------
-player 1 STAND / HIT
-player 2 WAIT
------------------------------------------------------------------------------------------*/
-				unsigned int option;
-				codeRival = TURN_PLAY_WAIT;
-				code = TURN_PLAY;
-				unsigned int player1Points;
-				unsigned int player2Points;
-
-//	player 1: TURN_PLAY
-					card = getRandomCard (&session.gameDeck);
-					session.player1Deck.cards[session.player1Deck.numCards] = card;
-					session.player1Deck.numCards++;
-					card = getRandomCard (&session.gameDeck);
-					session.player1Deck.cards[session.player1Deck.numCards] = card;
-					session.player1Deck.numCards++;
-					player1Points = calculatePoints(&session.player1Deck);
-					/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
-					printf("\n\n");
+	/*--------------------------------------------------------------
+	player 2: BET
+	--------------------------------------------------------------*/
+					code = TURN_BET;
+					/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
 					showSentCode(code);
-//	 player 2: TURN_PLAY_WAIT
-					/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
-					showSentCode(codeRival);
-					do{
-//player 1 OPTION
-					/*messageLength = */recv(socketPlayer1, &option, sizeof(unsigned int), 0);
-					showSentCode(option);
-						if (option == TURN_PLAY_HIT){
-							//enviar code, puntos y nuevo deck
-							card = getRandomCard (&session.gameDeck);
-							session.player1Deck.cards[session.player1Deck.numCards] = card;
-							session.player1Deck.numCards++;
-							player1Points = calculatePoints(&session.player1Deck);
-							code = player1Points > 21 ? TURN_PLAY_OUT : TURN_PLAY;
-							codeRival = code == TURN_PLAY_OUT ? TURN_PLAY_RIVAL_DONE : TURN_PLAY_WAIT;
-							/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
-							/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
-							/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
+					/*messageLength = */send(socketPlayer2, &session.player2Stack, sizeof(unsigned int), 0);
+		//player 2:recibir bet
+					while(code == TURN_BET){
+						/*messageLength = */recv(socketPlayer2, &session.player2Bet,sizeof(unsigned int), 0);
+						if (session.player2Bet < 0 || session.player2Bet > session.player2Stack)
+							code = TURN_BET;
+						else
+							code = TURN_BET_OK;
+							/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
 							showSentCode(code);
-						}
-						else if (option == TURN_PLAY_STAND){
-							codeRival = TURN_PLAY_RIVAL_DONE;
-						}
-		//	 player 2: TURN_PLAY_WAIT
+					}
+					session.player2Stack -=  session.player2Bet;
+
+	/*------------------------------------------------------------------------------------
+	player 1 STAND / HIT
+	player 2 WAIT
+	-----------------------------------------------------------------------------------------*/
+					codeRival = TURN_PLAY_WAIT;
+					code = TURN_PLAY;
+
+	//	player 1: TURN_PLAY
+						card = getRandomCard (&session.gameDeck);
+						session.player1Deck.cards[session.player1Deck.numCards] = card;
+						session.player1Deck.numCards++;
+						card = getRandomCard (&session.gameDeck);
+						session.player1Deck.cards[session.player1Deck.numCards] = card;
+						session.player1Deck.numCards++;
+						player1Points = calculatePoints(&session.player1Deck);
+						/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
+						printf("\n\n");
+						showSentCode(code);
+	//	 player 2: TURN_PLAY_WAIT
 						/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
 						showSentCode(codeRival);
-						printf("\n\n");
-				}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
-/*------------------------------------------------------------------------------------
-player 2 STAND / HIT
-player 1 WAIT
------------------------------------------------------------------------------------------*/
-					code = TURN_PLAY;
-					codeRival = TURN_PLAY_WAIT;
-					card = getRandomCard (&session.gameDeck);
-					session.player2Deck.cards[session.player2Deck.numCards] = card;
-					session.player2Deck.numCards++;
-					card = getRandomCard (&session.gameDeck);
-					session.player2Deck.cards[session.player2Deck.numCards] = card;
-					session.player2Deck.numCards++;
-					player2Points = calculatePoints(&session.player2Deck);
-
-					/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer2, &player2Points, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer2, &session.player2Deck, sizeof(session.player2Deck), 0);
-					printf("\n\n");
-					showSentCode(code);
-					/*messageLength = */send(socketPlayer1, &codeRival, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
-					/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
-					showSentCode(codeRival);
-				do{
-				/*messageLength = */recv(socketPlayer2, &option, sizeof(unsigned int), 0);
-				showSentCode(option);
-					if (option == TURN_PLAY_HIT){
+						do{
+	//player 1 OPTION
+						/*messageLength = */recv(socketPlayer1, &option, sizeof(unsigned int), 0);
+						showSentCode(option);
+							if (option == TURN_PLAY_HIT){
+								//enviar code, puntos y nuevo deck
+								card = getRandomCard (&session.gameDeck);
+								session.player1Deck.cards[session.player1Deck.numCards] = card;
+								session.player1Deck.numCards++;
+								player1Points = calculatePoints(&session.player1Deck);
+								code = player1Points > 21 ? TURN_PLAY_OUT : TURN_PLAY;
+								codeRival = code == TURN_PLAY_OUT ? TURN_PLAY_RIVAL_DONE : TURN_PLAY_WAIT;
+								/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+								/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
+								/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
+								showSentCode(code);
+							}
+							else if (option == TURN_PLAY_STAND){
+								codeRival = TURN_PLAY_RIVAL_DONE;
+							}
+			//	 player 2: TURN_PLAY_WAIT
+							/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
+							showSentCode(codeRival);
+							printf("\n\n");
+					}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
+	/*------------------------------------------------------------------------------------
+	player 2 STAND / HIT
+	player 1 WAIT
+	-----------------------------------------------------------------------------------------*/
+						code = TURN_PLAY;
+						codeRival = TURN_PLAY_WAIT;
+						card = getRandomCard (&session.gameDeck);
+						session.player2Deck.cards[session.player2Deck.numCards] = card;
+						session.player2Deck.numCards++;
 						card = getRandomCard (&session.gameDeck);
 						session.player2Deck.cards[session.player2Deck.numCards] = card;
 						session.player2Deck.numCards++;
 						player2Points = calculatePoints(&session.player2Deck);
 
-						code = player2Points > 21 ? TURN_PLAY_OUT : TURN_PLAY;
-						codeRival = code == TURN_PLAY_OUT ? TURN_PLAY_RIVAL_DONE : TURN_PLAY_WAIT;
-
 						/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer2, &player2Points, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer2, &session.player2Deck, sizeof(session.player2Deck), 0);
+						printf("\n\n");
 						showSentCode(code);
-
-					}
-					else if (option == TURN_PLAY_STAND)
-						codeRival = TURN_PLAY_RIVAL_DONE;
-		//	 player 1: TURN_PLAY_WAIT
 						/*messageLength = */send(socketPlayer1, &codeRival, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
 						showSentCode(codeRival);
-					printf("\n\n");
-			}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
-/*------------------------------------------------------------------------------------
-WINNER CHECK
------------------------------------------------------------------------------------------*/
-			updateStacks(&session);
-			printSession (&session);
-			if (session.player1Stack == 0 ){
-				code = TURN_GAME_LOSE;
-				codeRival = TURN_GAME_WIN;
-				endOfGame = TRUE;
-			}
-			else if (session.player2Stack == 0 ){
-				codeRival = TURN_GAME_LOSE;
-				code = TURN_GAME_WIN;
-				endOfGame = TRUE;
-			}
+					do{
+					/*messageLength = */recv(socketPlayer2, &option, sizeof(unsigned int), 0);
+					showSentCode(option);
+						if (option == TURN_PLAY_HIT){
+							card = getRandomCard (&session.gameDeck);
+							session.player2Deck.cards[session.player2Deck.numCards] = card;
+							session.player2Deck.numCards++;
+							player2Points = calculatePoints(&session.player2Deck);
+
+							code = player2Points > 21 ? TURN_PLAY_OUT : TURN_PLAY;
+							codeRival = code == TURN_PLAY_OUT ? TURN_PLAY_RIVAL_DONE : TURN_PLAY_WAIT;
+
+							/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer2, &player2Points, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer2, &session.player2Deck, sizeof(session.player2Deck), 0);
+							showSentCode(code);
+
+						}
+						else if (option == TURN_PLAY_STAND)
+							codeRival = TURN_PLAY_RIVAL_DONE;
+			//	 player 1: TURN_PLAY_WAIT
+							/*messageLength = */send(socketPlayer1, &codeRival, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
+							showSentCode(codeRival);
+						printf("\n\n");
+				}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
+			}	// if currentPlayer
+
+			/*-----------------------------------------------------------------------------------------------------
+			currentPlayer = player2
+			--------------------------------------------------------------*/
 			else{
-				code = SUIT_SIZE;	//UNKN
-				codeRival = SUIT_SIZE;
+	/*--------------------------------------------------------------
+	player 2: BET
+	--------------------------------------------------------------*/
+					code = TURN_BET;
+					/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
+					showSentCode(code);
+					/*messageLength = */send(socketPlayer2, &session.player2Stack, sizeof(unsigned int), 0);
+		//player 2:recibir bet
+					while(code == TURN_BET){
+						/*messageLength = */recv(socketPlayer2, &session.player2Bet,sizeof(unsigned int), 0);
+						if (session.player2Bet < 0 || session.player2Bet > session.player2Stack)
+							code = TURN_BET;
+						else
+							code = TURN_BET_OK;
+							/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
+							showSentCode(code);
+					}
+					session.player2Stack -=  session.player2Bet;
 
-			//	getNextPlayer (currentPlayer);
-				clearDeck(&session.player1Deck);
-				clearDeck(&session.player2Deck);
-				printf("%s\n", "--------------NEXT ROUND----------\n FIGHT!!!!!" );
-			}
-			/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
-			/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
+				/*--------------------------------------------------------------
+	player 1: BET
+	--------------------------------------------------------------*/
+				unsigned int code = TURN_BET;
+				/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+				/*messageLength = */send(socketPlayer1, &session.player1Stack, sizeof(unsigned int), 0);
+	//player 1:recibir bet
+				while(code == TURN_BET){
+					/*messageLength = */recv(socketPlayer1, &session.player1Bet,sizeof(unsigned int), 0);
+					if (session.player1Bet < 0 || session.player1Bet > session.player1Stack)
+						code = TURN_BET;
+					else
+						code = TURN_BET_OK;
+						/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+						showSentCode(code);
+				}
+				session.player1Stack -=  session.player1Bet;
 
-		}
+
+	/*------------------------------------------------------------------------------------
+	player 2 STAND / HIT
+	player 1 WAIT
+	-----------------------------------------------------------------------------------------*/
+						code = TURN_PLAY;
+						codeRival = TURN_PLAY_WAIT;
+						card = getRandomCard (&session.gameDeck);
+						session.player2Deck.cards[session.player2Deck.numCards] = card;
+						session.player2Deck.numCards++;
+						card = getRandomCard (&session.gameDeck);
+						session.player2Deck.cards[session.player2Deck.numCards] = card;
+						session.player2Deck.numCards++;
+						player2Points = calculatePoints(&session.player2Deck);
+
+						/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer2, &player2Points, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer2, &session.player2Deck, sizeof(session.player2Deck), 0);
+						printf("\n\n");
+						showSentCode(code);
+						/*messageLength = */send(socketPlayer1, &codeRival, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
+						showSentCode(codeRival);
+					do{
+					/*messageLength = */recv(socketPlayer2, &option, sizeof(unsigned int), 0);
+					showSentCode(option);
+						if (option == TURN_PLAY_HIT){
+							card = getRandomCard (&session.gameDeck);
+							session.player2Deck.cards[session.player2Deck.numCards] = card;
+							session.player2Deck.numCards++;
+							player2Points = calculatePoints(&session.player2Deck);
+
+							code = player2Points > 21 ? TURN_PLAY_OUT : TURN_PLAY;
+							codeRival = code == TURN_PLAY_OUT ? TURN_PLAY_RIVAL_DONE : TURN_PLAY_WAIT;
+
+							/*messageLength = */send(socketPlayer2, &code, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer2, &player2Points, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer2, &session.player2Deck, sizeof(session.player2Deck), 0);
+							showSentCode(code);
+
+						}
+						else if (option == TURN_PLAY_STAND)
+							codeRival = TURN_PLAY_RIVAL_DONE;
+			//	 player 1: TURN_PLAY_WAIT
+							/*messageLength = */send(socketPlayer1, &codeRival, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
+							/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
+							showSentCode(codeRival);
+						printf("\n\n");
+				}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
+
+				/*------------------------------------------------------------------------------------
+				player 1 STAND / HIT
+				player 2 WAIT
+				-----------------------------------------------------------------------------------------*/
+								unsigned int option;
+								codeRival = TURN_PLAY_WAIT;
+								code = TURN_PLAY;
+								unsigned int player1Points;
+								unsigned int player2Points;
+
+				//	player 1: TURN_PLAY
+									card = getRandomCard (&session.gameDeck);
+									session.player1Deck.cards[session.player1Deck.numCards] = card;
+									session.player1Deck.numCards++;
+									card = getRandomCard (&session.gameDeck);
+									session.player1Deck.cards[session.player1Deck.numCards] = card;
+									session.player1Deck.numCards++;
+									player1Points = calculatePoints(&session.player1Deck);
+									/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+									/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
+									/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
+									printf("\n\n");
+									showSentCode(code);
+				//	 player 2: TURN_PLAY_WAIT
+									/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
+									/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
+									/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
+									showSentCode(codeRival);
+									do{
+				//player 1 OPTION
+									/*messageLength = */recv(socketPlayer1, &option, sizeof(unsigned int), 0);
+									showSentCode(option);
+										if (option == TURN_PLAY_HIT){
+											//enviar code, puntos y nuevo deck
+											card = getRandomCard (&session.gameDeck);
+											session.player1Deck.cards[session.player1Deck.numCards] = card;
+											session.player1Deck.numCards++;
+											player1Points = calculatePoints(&session.player1Deck);
+											code = player1Points > 21 ? TURN_PLAY_OUT : TURN_PLAY;
+											codeRival = code == TURN_PLAY_OUT ? TURN_PLAY_RIVAL_DONE : TURN_PLAY_WAIT;
+											/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+											/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
+											/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
+											showSentCode(code);
+										}
+										else if (option == TURN_PLAY_STAND){
+											codeRival = TURN_PLAY_RIVAL_DONE;
+										}
+						//	 player 2: TURN_PLAY_WAIT
+										/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
+										/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
+										/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
+										showSentCode(codeRival);
+										printf("\n\n");
+								}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
+
+			}//////////////////////else currentPlayer
+			/*------------------------------------------------------------------------------------
+			WINNER CHECK
+			-----------------------------------------------------------------------------------------*/
+						updateStacks(&session);
+						if (session.player1Stack == 0 ){
+							code = TURN_GAME_LOSE;
+							codeRival = TURN_GAME_WIN;
+							endOfGame = TRUE;
+						}
+						else if (session.player2Stack == 0 ){
+							codeRival = TURN_GAME_LOSE;
+							code = TURN_GAME_WIN;
+							endOfGame = TRUE;
+						}
+						else{
+							code = SUIT_SIZE;	//UNKN
+							codeRival = SUIT_SIZE;
+
+							currentPlayer = getNextPlayer (currentPlayer);
+							clearDeck(&session.player1Deck);
+							clearDeck(&session.player2Deck);
+						}
+						/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
+						/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
+		}//while
 
 		// Close sockets
 		close (socketPlayer1);

@@ -1,7 +1,7 @@
 #include "utils.h"
 
 /** Debug mode? */
-#define DEBUG_CLIENT 1
+#define DEBUG_CLIENT 0
 
 /** Action taken by the player to stand */
 #define PLAYER_STAND 0
