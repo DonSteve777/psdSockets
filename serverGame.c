@@ -161,6 +161,8 @@ void *threadProcessing(void *threadArgs){
 					}
 					session.player2Stack -=  session.player2Bet;
 
+					printSession (&session);
+
 	/*------------------------------------------------------------------------------------
 	player 1 STAND / HIT
 	player 2 WAIT
@@ -202,6 +204,7 @@ void *threadProcessing(void *threadArgs){
 								/*messageLength = */send(socketPlayer1, &player1Points, sizeof(unsigned int), 0);
 								/*messageLength = */send(socketPlayer1, &session.player1Deck, sizeof(session.player1Deck), 0);
 								showSentCode(code);
+
 							}
 							else if (option == TURN_PLAY_STAND){
 								codeRival = TURN_PLAY_RIVAL_DONE;
@@ -211,6 +214,7 @@ void *threadProcessing(void *threadArgs){
 							/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
 							/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
 							showSentCode(codeRival);
+							printSession (&session);
 							printf("\n\n");
 					}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
 	/*------------------------------------------------------------------------------------
@@ -261,6 +265,8 @@ void *threadProcessing(void *threadArgs){
 							/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
 							/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
 							showSentCode(codeRival);
+							printSession (&session);
+
 						printf("\n\n");
 				}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
 			}	// if currentPlayer
@@ -305,6 +311,7 @@ void *threadProcessing(void *threadArgs){
 						showSentCode(code);
 				}
 				session.player1Stack -=  session.player1Bet;
+				printSession (&session);
 
 
 	/*------------------------------------------------------------------------------------
@@ -355,6 +362,8 @@ void *threadProcessing(void *threadArgs){
 							/*messageLength = */send(socketPlayer1, &player2Points, sizeof(unsigned int), 0);
 							/*messageLength = */send(socketPlayer1, &session.player2Deck, sizeof(session.player2Deck), 0);
 							showSentCode(codeRival);
+							printSession (&session);
+
 						printf("\n\n");
 				}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
 
@@ -411,6 +420,8 @@ void *threadProcessing(void *threadArgs){
 										/*messageLength = */send(socketPlayer2, &player1Points, sizeof(unsigned int), 0);
 										/*messageLength = */send(socketPlayer2, &session.player1Deck, sizeof(session.player1Deck), 0);
 										showSentCode(codeRival);
+										printSession (&session);
+
 										printf("\n\n");
 								}while(option == TURN_PLAY_HIT && code == TURN_PLAY);
 
@@ -430,12 +441,13 @@ void *threadProcessing(void *threadArgs){
 							endOfGame = TRUE;
 						}
 						else{
-							code = SUIT_SIZE;	//UNKN
+							code = SUIT_SIZE;	//UNKNOWN code: con esto el cliente sabe que la partida sigue
 							codeRival = SUIT_SIZE;
 
 							currentPlayer = getNextPlayer (currentPlayer);
 							clearDeck(&session.player1Deck);
 							clearDeck(&session.player2Deck);
+							initDeck(&session.gameDeck);
 						}
 						/*messageLength = */send(socketPlayer1, &code, sizeof(unsigned int), 0);
 						/*messageLength = */send(socketPlayer2, &codeRival, sizeof(unsigned int), 0);
