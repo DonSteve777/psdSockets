@@ -170,17 +170,15 @@ unsigned int readOption (){
 	return ((unsigned int) option);
 }
 
-
 int main(int argc, char *argv[]){
 
 	int socketfd;						/** Socket descriptor */
 	unsigned int port;					/** Port number (server) */
 	struct sockaddr_in server_address;	/** Server address structure */
 	char* serverIP;						/** Server IP */
-	unsigned int endOfGame;				/** Flag to control the end of the game */
+	unsigned int endOfGame = FALSE;				/** Flag to control the end of the game */
 	tString playerName;					/** Name of the player */
 	unsigned int code;					/** Code */
-
 
 		// Check arguments!
 		if (argc != 3){
@@ -188,10 +186,8 @@ int main(int argc, char *argv[]){
 			fprintf(stderr,"Usage:\n$>%s serverIP port\n", argv[0]);
 			exit(0);
 		}
-
 		// Get the server address
 		serverIP = argv[1];
-
 		// Get the port
 		port = atoi(argv[2]);
 
@@ -200,31 +196,23 @@ int main(int argc, char *argv[]){
 		// Check
 		if (socketfd < 0)
 		 showError("ERROR while opening socket");
-
 		// Fill server address structure
 		memset(&server_address, 0, sizeof(server_address));
 			server_address.sin_family = AF_INET;
 			server_address.sin_addr.s_addr = inet_addr(serverIP);
 			server_address.sin_port = htons(port);
-
 		// Connect with server
 		if (connect(socketfd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0)
 			showError("ERROR while establishing connection");
-
-
 		printf ("Connection established with server!\n");
-
 		// Init player's name
 		do{
 			memset(playerName, 0, STRING_LENGTH);
 			printf ("Enter player name:");
 			fgets(playerName, STRING_LENGTH-1, stdin);
-
 			// Remove '\n'
 			playerName[strlen(playerName)-1] = 0;
-
 		}while (strlen(playerName) <= 2);
-
 		// Init
 		/*messageLength = */send(socketfd, playerName, strlen(playerName), 0);
 
@@ -232,76 +220,81 @@ int main(int argc, char *argv[]){
 		printf ("Game starts!\n\n");
 
 		// While game continues...
-//		while (!endOfGame){	////////////////////////////////////////////////////////////////////////////
+		while (!endOfGame){	////////////////////////////////////////////////////////////////////////////
 /*--------------------------------------------------------------
 							BET
 --------------------------------------------------------------*/
 			unsigned int stack;
 			code = TURN_BET;
 			while(code == TURN_BET ){
-				if (DEBUG_CLIENT) printf("%s\n", "waiting code" );
 				/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);	//TURN_BET
 				showReceivedCode(code);
 				if (code == TURN_BET){
 					/*messageLength = */recv(socketfd, &stack, sizeof(unsigned int), 0);	//STACK
-					printf("%s %u\n", "stack: ", stack );
+					printf("Your stack is %u chips\n", stack);
 					unsigned int bet = readBet();
 					send(socketfd, &bet, sizeof(unsigned int), 0);
+					showReceivedCode(code);
 				}
 			}
 			/*------------------------------------------------------------------------------------
 			Esperar turno
 			-----------------------------------------------------------------------------------------*/
-			// if (DEBUG_CLIENT)	printf("%s\n", "waiting turn play xxxxxxxxxxxxxxxx" );
-			/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
-			showReceivedCode(code);
-			// unsigned int points;
-			// tDeck deck;
+			unsigned int points;
+			tDeck deck;
 /*------------------------------------------------------------------------------------
 PLAY
 -----------------------------------------------------------------------------------------*/
-		// 	if (code == TURN_PLAY){
-		// 		printf("%s\n", "waiting points and deck" );
-		// 		/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-		// 		/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-		// 		printf("%s %u\n","Points :", points );
-		// 		printDeck(&deck);
-		// 		while (code == TURN_PLAY){
-		// 			unsigned int option = readOption();
-		// 			/*messageLength = */send(socketfd, &option, sizeof(unsigned int), 0);
-		// 			if (option == TURN_PLAY_HIT){
-		// 				/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
-		// 				/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-		// 				/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-		// 				showReceivedCode(code);
-		// 			}
-		// 		}
-		// }
-//STAND / HIT
+enum State_type{unstaged, playAndWait, waitAndPlay, nextRound };	//a modo maquina de estados
+enum State_type order = unstaged;	// para controlar si este cleinte empieza jugando o empeza esperando
+unsigned int option;
+do{
+					/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
+	 				/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
+	 				/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
+					showReceivedCode(code);
 
-/*------------------------------------------------------------------------------------
-WAIT
------------------------------------------------------------------------------------------*/
-			// else if (code == TURN_PLAY_WAIT){
-			// 	/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-			// 	/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-			// 	printf("%s %u\n","Opponent \n Points :", points );
-			// 	printDeck(&deck);
-			// }
-			// while (code == TURN_PLAY_WAIT){
-			// 	/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
-			// 	/*messageLength = */recv(socketfd, &points , sizeof(unsigned int), 0);
-			// 	/*messageLength = */recv(socketfd, &deck , sizeof(deck), 0);
-			// 	printf("%s %u\n","Opponent \n Points :", points );
-			// 	printDeck(&deck);
-			// }
+					if (order == unstaged)
+						order = code == TURN_PLAY ?  playAndWait : waitAndPlay;
+// play
+					if (code == TURN_PLAY){
+						printf("You have %u points\n", points );
+			  		printDeck(&deck);
+						option = readOption() == PLAYER_HIT_CARD ? TURN_PLAY_HIT : TURN_PLAY_STAND;
+					 	/*messageLength = */send(socketfd, &option, sizeof(unsigned int), 0);
+						if (option == TURN_PLAY_STAND)
+							order = order == waitAndPlay ? nextRound : order;	//segundo en jugar, me planto, siguiente ronda
+					}
+					else if (code == TURN_PLAY_WAIT){
+						printf("%s %u\n","Opponent Points :", points );
+			  		printDeck(&deck);
+					}
+					else if (code == TURN_PLAY_OUT){
+						order = order == waitAndPlay ? nextRound : order;	//jugando como segundo , me paso de 21, siguiente ronda
+						printf("You are OUT!! %u points", points );
 
-			/*------------------------------------------------------------------------------------
-			TURN_PLAY_WAIT , jugada actual, deck
-			-----------------------------------------------------------------------------------------*/
+					}
+					else if (code == TURN_PLAY_RIVAL_DONE){
+						order = order == playAndWait ? nextRound : order;	// si he empezado jugando, siguiente ronda
+					}
+					printf("\n\n");
+}while(order != nextRound);
 
-
-//		}////////////////////////////////////////////////////////////////////////////
+			/*messageLength = */recv(socketfd, &code , sizeof(unsigned int), 0);
+			showReceivedCode(code);
+			if (code == TURN_GAME_WIN){
+				endOfGame = TRUE;
+				printf("%s\n", "WINNER" );
+			}
+			else if (code == TURN_GAME_LOSE){
+				endOfGame = TRUE;
+				printf("%s\n", "YOU LOSE" );
+			}
+			else{
+				printf("%s\n", "-----------NEXT ROUND---------" );
+				endOfGame = FALSE;
+			}
+		} ///while ////////////////////////////////////////////////////////////////////////////
 
 	// Close socket
 	close (socketfd);
